@@ -1,0 +1,12 @@
+apiVersion: autoscaler.allthatjazzleo/v1alpha1
+kind: PodDiskInspector
+metadata:
+  labels:
+    app.kubernetes.io/name: poddiskinspector
+    app.kubernetes.io/instance: poddiskinspector-sample
+    app.kubernetes.io/part-of: pvc-autoscaler-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: pvc-autoscaler-operator
+  name: poddiskinspector-sample
+spec:
+  # TODO(user): Add fields here
