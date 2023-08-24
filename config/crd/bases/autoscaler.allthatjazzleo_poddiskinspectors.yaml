@@ -1,0 +1,135 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
+  creationTimestamp: null
+  name: poddiskinspectors.autoscaler.allthatjazzleo
+spec:
+  group: autoscaler.allthatjazzleo
+  names:
+    kind: PodDiskInspector
+    listKind: PodDiskInspectorList
+    plural: poddiskinspectors
+    singular: poddiskinspector
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: PodDiskInspector is the Schema for the poddiskinspectors API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation
+              of an object. Servers should convert recognized schemas to the latest
+              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this
+              object represents. Servers may infer this from the endpoint the client
+              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: PodDiskInspectorSpec defines the desired state of PodDiskInspector
+            properties:
+              image:
+                description: Image is the docker reference in "repository:tag" format.
+                  E.g. busybox:latest. This is for the sidecar container running the
+                  disk health check process.
+                minLength: 1
+                type: string
+              pvcScaling:
+                description: Your cluster must support and use the ExpandInUsePersistentVolumes
+                  feature gate. This allows volumes to expand while a pod is attached
+                  to it, thus eliminating the need to restart pods. If you cluster
+                  does not support ExpandInUsePersistentVolumes, you will need to
+                  manually restart pods after resizing is complete.
+                properties:
+                  cooldown:
+                    description: How long to wait before scaling again. For AWS EBS,
+                      this is 6 hours.
+                    type: string
+                  increaseQuantity:
+                    description: "How much to increase the PVC's capacity. Either
+                      a percentage (e.g. 20%) or a resource storage quantity (e.g.
+                      100Gi). \n If a percentage, the existing capacity increases
+                      by the percentage. E.g. PVC of 100Gi capacity + IncreaseQuantity
+                      of 20% increases disk to 120Gi. \n If a storage quantity (e.g.
+                      100Gi), increases by that amount."
+                    type: string
+                  maxSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    description: A resource storage quantity (e.g. 2000Gi). When increasing
+                      PVC capacity reaches >= MaxSize, autoscaling ceases. Safeguards
+                      against storage quotas and costs.
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                  usedSpacePercentage:
+                    description: The percentage of used disk space required to trigger
+                      scaling. Example, if set to 80, autoscaling will not trigger
+                      until used space reaches >=80% of capacity.
+                    format: int32
+                    minimum: 1
+                    type: integer
+                required:
+                - increaseQuantity
+                - usedSpacePercentage
+                type: object
+            required:
+            - image
+            type: object
+          status:
+            description: PodDiskInspectorStatus defines the observed state of PodDiskInspector
+            properties:
+              podDiskInfo:
+                description: PodDiskInfo contains information about a pod's disk
+                items:
+                  description: PodDiskInfo contains information about a pod's disk
+                  properties:
+                    podName:
+                      description: PodName is the name of the pod
+                      type: string
+                    pvcScalingStatus:
+                      description: PVCScalingStatus contains information about a pod's
+                        PVC scaling status
+                      items:
+                        properties:
+                          pvcName:
+                            description: The PVC name
+                            type: string
+                          requestedAt:
+                            description: The timestamp the PVCScaling controller requested
+                              a PVC increase.
+                            format: date-time
+                            type: string
+                          requestedSize:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: The PVC size requested by the PVCScaling
+                              controller.
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                        required:
+                        - pvcName
+                        - requestedAt
+                        - requestedSize
+                        type: object
+                      type: array
+                  type: object
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

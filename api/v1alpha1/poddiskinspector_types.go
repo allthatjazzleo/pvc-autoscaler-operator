@@ -28,18 +28,41 @@ type PodDiskInspectorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of PodDiskInspector. Edit poddiskinspector_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	// Image is the docker reference in "repository:tag" format. E.g. busybox:latest.
+	// This is for the sidecar container running the disk health check process.
+	// +kubebuilder:validation:MinLength:=1
+	Image string `json:"image"`
+
+	// Your cluster must support and use the ExpandInUsePersistentVolumes feature gate. This allows volumes to
+	// expand while a pod is attached to it, thus eliminating the need to restart pods.
+	// If you cluster does not support ExpandInUsePersistentVolumes, you will need to manually restart pods after
+	// resizing is complete.
+	// +optional
+	PVCScaling *PVCScalingSpec `json:"pvcScaling"`
 }
 
 // PodDiskInspectorStatus defines the observed state of PodDiskInspector
 type PodDiskInspectorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+
+	// PodDiskInfo contains information about a pod's disk
+	// +optional
+	PodDiskInfo []PodDiskInfo `json:"podDiskInfo,omitempty"`
+}
+
+// PodDiskInfo contains information about a pod's disk
+type PodDiskInfo struct {
+	// PodName is the name of the pod
+	PodName string `json:"podName,omitempty"`
+
+	// PVCScalingStatus contains information about a pod's PVC scaling status
+	PVCScalingStatus []PVCScalingStatus `json:"pvcScalingStatus,omitempty"`
 }
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 
 // PodDiskInspector is the Schema for the poddiskinspectors API
 type PodDiskInspector struct {

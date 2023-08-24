@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: demo
+  annotations:
+    pvc-autoscaler-operator.kubernetes.io/enabled: "true"
+    pvc-autoscaler-operator.kubernetes.io/image: "allthatjazzleo/pvc-autoscaler-operator:0.0.1-aa69336"
+    pvc-autoscaler-operator.kubernetes.io/operator-name: "poddiskinspector-sample"
+    pvc-autoscaler-operator.kubernetes.io/operator-namespace: "pvc-autoscaler-operator-system"
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.14.2
+    ports:
+    - containerPort: 80
+    volumeMounts:
+      - mountPath: "/data"
+        name: demo-vol
+  volumes:
+    - name: demo-vol
+      persistentVolumeClaim:
+        claimName: demo

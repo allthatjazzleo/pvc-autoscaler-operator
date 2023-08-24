@@ -20,4 +20,7 @@ resources:
   kind: PodDiskInspector
   path: github.com/allthatjazzleo/pvc-autoscaler-operator/api/v1alpha1
   version: v1alpha1
+  webhooks:
+    defaulting: false
+    webhookVersion: v1
 version: "3"

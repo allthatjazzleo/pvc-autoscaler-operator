@@ -20,17 +20,20 @@ import (
 	"context"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/record"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	autoscalerv1alpha1 "github.com/allthatjazzleo/pvc-autoscaler-operator/api/v1alpha1"
+	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/kube"
 )
 
 // PodDiskInspectorReconciler reconciles a PodDiskInspector object
 type PodDiskInspectorReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme   *runtime.Scheme
+	Recorder record.EventRecorder
 }
 
 //+kubebuilder:rbac:groups=autoscaler.allthatjazzleo,resources=poddiskinspectors,verbs=get;list;watch;create;update;patch;delete
@@ -47,15 +50,27 @@ type PodDiskInspectorReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.14.1/pkg/reconcile
 func (r *PodDiskInspectorReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	log := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	// Fetch the PodDiskInspector instance
+	crd := &autoscalerv1alpha1.PodDiskInspector{}
+	err := r.Get(ctx, req.NamespacedName, crd)
+	if err != nil {
+		if kube.IsNotFound(err) {
+			// If the custom resource is not found then, it usually means that it was deleted or not created
+			// In this way, we will stop the reconciliation
+			log.Info("crd resource not found. Ignoring since object must be deleted")
+			return ctrl.Result{}, nil
+		}
+		log.Error(err, "unable to fetch PodDiskInspector")
+		return ctrl.Result{}, err
+	}
 
 	return ctrl.Result{}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *PodDiskInspectorReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *PodDiskInspectorReconciler) SetupWithManager(_ context.Context, mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&autoscalerv1alpha1.PodDiskInspector{}).
 		Complete(r)

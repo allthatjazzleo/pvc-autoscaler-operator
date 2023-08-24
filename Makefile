@@ -51,7 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= unknown
 
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= $(IMAGE_TAG_BASE):$(VERSION)-$(shell git describe --always)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26.0
 
@@ -109,6 +109,11 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
+.PHONY: test-pod
+test-pod:
+	cd config/samples/test && $(KUSTOMIZE) edit set annotation pvc-autoscaler-operator.kubernetes.io/image:${IMG}
+	$(KUSTOMIZE) build config/samples/test | kubectl apply -f -
+
 ##@ Build
 
 .PHONY: build
@@ -125,6 +130,10 @@ run: manifests generate fmt vet ## Run a controller from your host.
 .PHONY: docker-build
 docker-build: test ## Build docker image with the manager.
 	docker build -t ${IMG} .
+
+.PHONY: docker-build-to-k3d
+docker-build-to-k3d: docker-build ## Build docker image with the manager.
+	k3d image import ${IMG} -c k3d
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
@@ -165,6 +174,13 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
+
+.PHONY: deploy-k3d
+deploy-k3d: docker-build-to-k3d manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	yq e ".spec.image = \"${IMG}\"" -i config/samples/autoscaler_v1alpha1_poddiskinspector.yaml 
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(KUSTOMIZE) build config/samples | kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
