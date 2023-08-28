@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+
+	"github.com/samber/lo"
 )
 
 // Client can be used to query healthcheck information.
@@ -24,32 +26,32 @@ func NewClient(client *http.Client) *Client {
 
 // DiskUsage returns disk usage statistics or an error if unable to obtain.
 // Do not include the port in the host.
-func (c Client) DiskUsage(ctx context.Context, host string) (DiskUsageResponse, error) {
-	var diskResp DiskUsageResponse
+func (c Client) DiskUsage(ctx context.Context, host string) ([]DiskUsageResponse, error) {
+	var diskResps = make([]DiskUsageResponse, 0)
 	u, err := url.Parse(host)
 	if err != nil {
-		return diskResp, fmt.Errorf("url parse: %w", err)
+		return diskResps, fmt.Errorf("url parse: %w", err)
 	}
 	u.Host = net.JoinHostPort(u.Host, strconv.Itoa(Port))
 	u.Path = "/disk"
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u.String(), nil)
 	if err != nil {
-		return diskResp, fmt.Errorf("new request: %w", err)
+		return diskResps, fmt.Errorf("new request: %w", err)
 	}
 	resp, err := c.httpDo(req)
 	if err != nil {
-		return diskResp, fmt.Errorf("http do: %w", err)
+		return diskResps, fmt.Errorf("http do: %w", err)
 	}
 	defer resp.Body.Close()
-	if err = json.NewDecoder(resp.Body).Decode(&diskResp); err != nil {
-		return diskResp, fmt.Errorf("malformed json: %w", err)
+	if err = json.NewDecoder(resp.Body).Decode(&diskResps); err != nil {
+		return diskResps, fmt.Errorf("malformed json: %w", err)
 	}
-	if diskResp.Error != "" {
-		return diskResp, errors.New(diskResp.Error)
+	diskResps = lo.Filter(diskResps, func(item DiskUsageResponse, index int) bool {
+		return item.Error == "" && item.AllBytes != 0
+	})
+	if len(diskResps) == 0 {
+		return diskResps, errors.New("no disk usage data")
 	}
-	if diskResp.AllBytes == 0 {
-		return diskResp, errors.New("invalid response: 0 free bytes")
-	}
-	return diskResp, nil
+	return diskResps, nil
 }

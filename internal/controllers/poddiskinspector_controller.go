@@ -14,10 +14,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package controller
+package controllers
 
 import (
 	"context"
+	"time"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/record"
@@ -35,6 +36,11 @@ type PodDiskInspectorReconciler struct {
 	Scheme   *runtime.Scheme
 	Recorder record.EventRecorder
 }
+
+var (
+	stopResult    ctrl.Result
+	requeueResult = ctrl.Result{RequeueAfter: 3 * time.Second}
+)
 
 //+kubebuilder:rbac:groups=autoscaler.allthatjazzleo,resources=poddiskinspectors,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=autoscaler.allthatjazzleo,resources=poddiskinspectors/status,verbs=get;update;patch

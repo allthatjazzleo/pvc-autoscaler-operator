@@ -19,6 +19,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -36,8 +37,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	autoscalerv1alpha1 "github.com/allthatjazzleo/pvc-autoscaler-operator/api/v1alpha1"
-	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/controller"
+	"github.com/allthatjazzleo/pvc-autoscaler-operator/api/v1alpha1"
+	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/controllers"
 	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/version"
 	"github.com/go-logr/zapr"
 	"github.com/pkg/profile"
@@ -54,7 +55,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(autoscalerv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(v1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
@@ -156,7 +157,7 @@ func startManager(cmd *cobra.Command, args []string) error {
 
 	ctx := cmd.Context()
 
-	if err = (&controller.PodDiskInspectorReconciler{
+	if err = (&controllers.PodDiskInspectorReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Recorder: mgr.GetEventRecorderFor("pod-disk-inspector-controller"),
@@ -165,11 +166,21 @@ func startManager(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// An ancillary controller that supports PodDiskInspector.
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	if err = controllers.NewPVCScaling(
+		mgr.GetClient(),
+		mgr.GetEventRecorderFor(v1alpha1.PVCScalingController),
+		httpClient,
+	).SetupWithManager(ctx, mgr); err != nil {
+		return fmt.Errorf("unable to create PVCScaling controller: %w", err)
+	}
+
 	// register webhook
 	srv := mgr.GetWebhookServer()
 	decoder := admission.NewDecoder(mgr.GetScheme())
 	srv.Register("/mutate-v1-pod-sidecar-injector", &webhook.Admission{
-		Handler: controller.NewPodInterceptorWebhook(
+		Handler: controllers.NewPodInterceptorWebhook(
 			mgr.GetClient(),
 			decoder,
 			mgr.GetEventRecorderFor("pod-sidecar-injector"),

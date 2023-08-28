@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: allthatjazzleo/pvc-autoscaler-operator
-  newTag: 0.0.1-e413d51
+  newTag: 0.0.1-8e09503

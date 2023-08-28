@@ -1,4 +1,4 @@
-package controller
+package controllers
 
 import (
 	"context"
@@ -21,11 +21,6 @@ import (
 
 var _ webhook.AdmissionHandler = (*podInterceptor)(nil)
 
-const operatorEnabled = "pvc-autoscaler-operator.kubernetes.io/enabled"
-const operatorName = "pvc-autoscaler-operator.kubernetes.io/operator-name"
-const operatorNamespace = "pvc-autoscaler-operator.kubernetes.io/operator-namespace"
-const operatorImage = "pvc-autoscaler-operator.kubernetes.io/image"
-
 // NewPodInterceptorWebhook creates a new pod mutating webhook to be registered
 func NewPodInterceptorWebhook(c client.Client, decoder *admission.Decoder, recorder record.EventRecorder) webhook.AdmissionHandler {
 	return &podInterceptor{
@@ -40,9 +35,7 @@ func NewPodInterceptorWebhook(c client.Client, decoder *admission.Decoder, recor
 
 // +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;update;patch
-// +kubebuilder:rbac:groups=core,resources=persistentvolumeclaims,verbs=get;list;watch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;update;patch
-// +kubebuilder:rbac:groups=autoscaler.allthatjazzleo,resources=poddiskinspectors,verbs=get;list
 
 // podInterceptor label pods if Sidecar is specified in pod
 type podInterceptor struct {
@@ -69,23 +62,21 @@ func (d *podInterceptor) Handle(ctx context.Context, req admission.Request) admi
 		return admission.Errored(http.StatusBadRequest, err)
 	}
 
-	enabled := strings.ToLower(strings.TrimSpace(pod.Annotations[operatorEnabled]))
-	name := strings.TrimSpace(pod.Annotations[operatorName])
-	namespace := strings.TrimSpace(pod.Annotations[operatorNamespace])
-	image := strings.TrimSpace(pod.Annotations[operatorImage])
+	enabled := strings.ToLower(strings.TrimSpace(pod.Annotations[kube.OperatorEnabled]))
+	name := strings.TrimSpace(pod.Annotations[kube.OperatorName])
+	namespace := strings.TrimSpace(pod.Annotations[kube.OperatorNamespace])
+	image := strings.TrimSpace(pod.Annotations[kube.OperatorImage])
 
-	if enabled == "true" {
-		if name != "" && namespace != "" {
-			key := client.ObjectKey{Name: name, Namespace: namespace}
-			if err := d.client.Get(ctx, key, crd); err != nil {
-				msg := "no CRD found for the operator, don't do anything"
-				return admission.Allowed(msg)
-			}
-			reporter = reporter.UpdateResource(crd)
+	if enabled == "true" && name != "" && namespace != "" {
+		key := client.ObjectKey{Name: name, Namespace: namespace}
+		if err := d.client.Get(ctx, key, crd); err != nil {
+			msg := "no CRD found for the operator, don't do anything"
+			return admission.Allowed(msg)
+		}
+		reporter = reporter.UpdateResource(crd)
 
-			if image == "" {
-				image = crd.Spec.Image
-			}
+		if image == "" {
+			image = crd.Spec.Image
 		}
 
 		// Add healtcheck sidecar if pod doesn't have one named "diskhealthcheck"
@@ -95,16 +86,8 @@ func (d *podInterceptor) Handle(ctx context.Context, req admission.Request) admi
 			}
 		}
 
-		volMap := make(map[string]string)
-
-		for _, volume := range pod.Spec.Volumes {
-			if volume.PersistentVolumeClaim != nil {
-				volMap[volume.Name] = volume.PersistentVolumeClaim.ClaimName
-			}
-		}
-
 		// Inject healthcheck sidecar
-		sidecar, err := inject.Sidecar(volMap, image)
+		sidecar, err := inject.Sidecar(pod, image)
 		if err != nil {
 			reporter.RecordError("InjectHealthcheckSidecar", err)
 			return admission.Allowed("no pvc to monitor, no action")

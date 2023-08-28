@@ -46,18 +46,11 @@ type PodDiskInspectorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// PodDiskInfo contains information about a pod's disk
+	// PVCScalingStatus contains the status of the PVCScaling controller.
+	// Map key is the PVC NamespacedName
 	// +optional
-	PodDiskInfo []PodDiskInfo `json:"podDiskInfo,omitempty"`
-}
-
-// PodDiskInfo contains information about a pod's disk
-type PodDiskInfo struct {
-	// PodName is the name of the pod
-	PodName string `json:"podName,omitempty"`
-
-	// PVCScalingStatus contains information about a pod's PVC scaling status
-	PVCScalingStatus []PVCScalingStatus `json:"pvcScalingStatus,omitempty"`
+	// +mapType:=granular
+	PVCScalingStatus map[string]ScalingStatus `json:"pvcScalingStatus,omitempty"`
 }
 
 //+kubebuilder:object:root=true

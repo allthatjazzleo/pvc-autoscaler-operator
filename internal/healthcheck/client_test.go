@@ -25,10 +25,12 @@ func TestClient_DiskUsage(t *testing.T) {
 		client := NewClient(httpClient)
 		require.NotNil(t, client.httpDo)
 
-		want := DiskUsageResponse{
-			Dir:       "/test",
-			AllBytes:  100,
-			FreeBytes: 10,
+		want := []DiskUsageResponse{
+			{
+				Dir:       "/test",
+				AllBytes:  100,
+				FreeBytes: 10,
+			},
 		}
 
 		client.httpDo = func(req *http.Request) (*http.Response, error) {
@@ -62,7 +64,9 @@ func TestClient_DiskUsage(t *testing.T) {
 	t.Run("error in response", func(t *testing.T) {
 		client := NewClient(httpClient)
 
-		stub := DiskUsageResponse{Error: "something bad happened"}
+		stub := []DiskUsageResponse{
+			{Error: "something bad happened"},
+		}
 		client.httpDo = func(req *http.Request) (*http.Response, error) {
 			b, err := json.Marshal(stub)
 			if err != nil {
@@ -76,7 +80,7 @@ func TestClient_DiskUsage(t *testing.T) {
 		_, err := client.DiskUsage(ctx, host)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "something bad happened")
+		require.EqualError(t, err, "no disk usage data")
 	})
 
 	t.Run("invalid JSON", func(t *testing.T) {
@@ -99,13 +103,13 @@ func TestClient_DiskUsage(t *testing.T) {
 
 		client.httpDo = func(req *http.Request) (*http.Response, error) {
 			return &http.Response{
-				Body: io.NopCloser(strings.NewReader(`{}`)),
+				Body: io.NopCloser(strings.NewReader(`[]`)),
 			}, nil
 		}
 
 		_, err := client.DiskUsage(ctx, host)
 
 		require.Error(t, err)
-		require.EqualError(t, err, "invalid response: 0 free bytes")
+		require.EqualError(t, err, "no disk usage data")
 	})
 }

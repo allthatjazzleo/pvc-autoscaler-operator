@@ -40,9 +40,7 @@ type PVCScalingSpec struct {
 	MaxSize resource.Quantity `json:"maxSize"`
 }
 
-type PVCScalingStatus struct {
-	// The PVC name
-	PVCName string `json:"pvcName"`
+type ScalingStatus struct {
 	// The PVC size requested by the PVCScaling controller.
 	RequestedSize resource.Quantity `json:"requestedSize"`
 	// The timestamp the PVCScaling controller requested a PVC increase.

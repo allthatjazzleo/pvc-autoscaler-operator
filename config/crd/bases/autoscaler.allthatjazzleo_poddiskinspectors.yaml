@@ -90,43 +90,29 @@ spec:
           status:
             description: PodDiskInspectorStatus defines the observed state of PodDiskInspector
             properties:
-              podDiskInfo:
-                description: PodDiskInfo contains information about a pod's disk
-                items:
-                  description: PodDiskInfo contains information about a pod's disk
+              pvcScalingStatus:
+                additionalProperties:
                   properties:
-                    podName:
-                      description: PodName is the name of the pod
+                    requestedAt:
+                      description: The timestamp the PVCScaling controller requested
+                        a PVC increase.
+                      format: date-time
                       type: string
-                    pvcScalingStatus:
-                      description: PVCScalingStatus contains information about a pod's
-                        PVC scaling status
-                      items:
-                        properties:
-                          pvcName:
-                            description: The PVC name
-                            type: string
-                          requestedAt:
-                            description: The timestamp the PVCScaling controller requested
-                              a PVC increase.
-                            format: date-time
-                            type: string
-                          requestedSize:
-                            anyOf:
-                            - type: integer
-                            - type: string
-                            description: The PVC size requested by the PVCScaling
-                              controller.
-                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                            x-kubernetes-int-or-string: true
-                        required:
-                        - pvcName
-                        - requestedAt
-                        - requestedSize
-                        type: object
-                      type: array
+                    requestedSize:
+                      anyOf:
+                      - type: integer
+                      - type: string
+                      description: The PVC size requested by the PVCScaling controller.
+                      pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                      x-kubernetes-int-or-string: true
+                  required:
+                  - requestedAt
+                  - requestedSize
                   type: object
-                type: array
+                description: PVCScalingStatus contains the status of the PVCScaling
+                  controller. Map key is the PVC NamespacedName
+                type: object
+                x-kubernetes-map-type: granular
             type: object
         type: object
     served: true

@@ -6,4 +6,4 @@ resources:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 commonAnnotations:
-  pvc-autoscaler-operator.kubernetes.io/image: allthatjazzleo/pvc-autoscaler-operator:0.0.1-e413d51
+  pvc-autoscaler-operator.kubernetes.io/image: allthatjazzleo/pvc-autoscaler-operator:0.0.1-8e09503

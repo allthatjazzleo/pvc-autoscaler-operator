@@ -22,5 +22,6 @@ pkgs.mkShell {
     kubectl
     operator-sdk
     gomod2nix
+    yq-go
   ];
 }

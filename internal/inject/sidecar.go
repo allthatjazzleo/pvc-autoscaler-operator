@@ -15,7 +15,15 @@ import (
 const healthCheckPort = healthcheck.Port
 
 // SidecarInjector is a sidecar injector
-func Sidecar(volMap map[string]string, image string) (corev1.Container, error) {
+func Sidecar(pod *corev1.Pod, image string) (corev1.Container, error) {
+	volMap := make(map[string]string)
+
+	for _, volume := range pod.Spec.Volumes {
+		if volume.PersistentVolumeClaim != nil {
+			volMap[volume.Name] = volume.PersistentVolumeClaim.ClaimName
+		}
+	}
+
 	if len(volMap) == 0 {
 		return corev1.Container{}, fmt.Errorf("no PVCs to monitor")
 	}
