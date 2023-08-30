@@ -293,7 +293,7 @@ func (b mockPodBuilder) WithOrdinalBuild(ordinal int32) (*corev1.Pod, error) {
 	pod.Spec.Containers[0].VolumeMounts = mounts
 
 	// Inject healthcheck sidecar
-	sidecar, err := inject.Sidecar(pod, b.crd.Spec.Image)
+	sidecar, err := inject.Sidecar(pod, b.crd.Spec.SidecarImage)
 	if err != nil {
 		return nil, err
 	}

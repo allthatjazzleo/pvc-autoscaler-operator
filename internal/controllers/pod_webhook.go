@@ -75,7 +75,7 @@ func (d *podInterceptor) Handle(ctx context.Context, req admission.Request) admi
 		reporter = reporter.UpdateResource(crd)
 
 		if image == "" {
-			image = crd.Spec.Image
+			image = crd.Spec.SidecarImage
 		}
 
 		// Add healtcheck sidecar if pod doesn't have one named "diskhealthcheck"

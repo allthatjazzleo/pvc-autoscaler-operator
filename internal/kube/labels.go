@@ -6,7 +6,7 @@ const (
 	OperatorEnabled   = "pvc-autoscaler-operator.kubernetes.io/enabled"
 	OperatorName      = "pvc-autoscaler-operator.kubernetes.io/operator-name"
 	OperatorNamespace = "pvc-autoscaler-operator.kubernetes.io/operator-namespace"
-	OperatorImage     = "pvc-autoscaler-operator.kubernetes.io/image"
+	OperatorImage     = "pvc-autoscaler-operator.kubernetes.io/sidecar-image"
 )
 
 // Fields.

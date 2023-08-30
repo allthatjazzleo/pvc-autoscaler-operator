@@ -1,80 +1,22 @@
 # pvc-autoscaler-operator
-// TODO(user): Add simple overview of use/purpose
+The PVC Autoscaler Operator is an open-source solution designed to introduce autoscaling capabilities to Persistent Volume Claims (PVCs) within Kubernetes ecosystems. It accomplishes this by deploying a disk healthcheck sidecar injection mechanism, eliminating the dependence on Prometheus metrics. This progressive approach enhances the scalability and efficiency of containerized storage management.
 
-## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Not extensively tested, use at your own risk.
+
+## Motivation
+
+Current solutions of PVC autoscaling are to use Prometheus metrics to monitor the disk usage of the PVC. However, this approach is not scalable and efficient. The Prometheus metrics are collected by the Prometheus server, which is a single point of failure. The Prometheus server is also a bottleneck for the scalability of the PVC autoscaling. The Prometheus server is not designed to hand large amount of metric data. This project aims to provide a scalable and efficient solution to PVC autoscaling by introducing a disk healthcheck sidecar injection mechanism.
 
 ## Getting Started
-You’ll need a Kubernetes cluster to run against. You can use [KIND](https://sigs.k8s.io/kind) to get a local cluster for testing, or run against a remote cluster.
-**Note:** Your controller will automatically use the current context in your kubeconfig file (i.e. whatever cluster `kubectl cluster-info` shows).
-
-### Running on the cluster
-1. Install Instances of Custom Resources:
-
-```sh
-kubectl apply -f config/samples/
-```
-
-2. Build and push your image to the location specified by `IMG`:
-
-```sh
-make docker-build docker-push IMG=<some-registry>/pvc-autoscaler-operator:tag
-```
-
-3. Deploy the controller to the cluster with the image specified by `IMG`:
-
-```sh
-make deploy IMG=<some-registry>/pvc-autoscaler-operator:tag
-```
-
-### Uninstall CRDs
-To delete the CRDs from the cluster:
-
-```sh
-make uninstall
-```
-
-### Undeploy controller
-UnDeploy the controller from the cluster:
-
-```sh
-make undeploy
-```
+See the [quick start guide](./docs/quick_start.md).
 
 ## Contributing
-// TODO(user): Add detailed information on how you would like others to contribute to this project
 
-### How it works
-This project aims to follow the Kubernetes [Operator pattern](https://kubernetes.io/docs/concepts/extend-kubernetes/operator/).
+See the [contributing guide](./docs/contributing.md).
 
-It uses [Controllers](https://kubernetes.io/docs/concepts/architecture/controller/),
-which provide a reconcile function responsible for synchronizing resources until the desired state is reached on the cluster.
+## Acknowledgement
 
-### Test It Out
-1. Install the CRDs into the cluster:
-
-```sh
-make install
-```
-
-2. Run your controller (this will run in the foreground, so switch to a new terminal if you want to leave it running):
-
-```sh
-make run
-```
-
-**NOTE:** You can also run this in one step by running: `make install run`
-
-### Modifying the API definitions
-If you are editing the API definitions, generate the manifests such as CRs or CRDs using:
-
-```sh
-make manifests
-```
-
-**NOTE:** Run `make --help` for more information on all potential `make` targets
-
-More information can be found via the [Kubebuilder Documentation](https://book.kubebuilder.io/introduction.html)
+The initial idea for this project was inspired by how [strangelove-ventures/cosmos-operator](<https://github.com/strangelove-ventures/cosmos-operator>) manages and scales PVC resources for cosmoshub nodes. Some of the code was also borrowed from strangelove-ventures/cosmos-operator such as [internal/healthcheck](./internal/healthcheck/) and [internal/controllers/pvcscaling_controller.go](./internal/controllers/pvcscaling_controller.go).
 
 ## License
 

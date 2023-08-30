@@ -9,7 +9,8 @@ metadata:
     app.kubernetes.io/created-by: pvc-autoscaler-operator
   name: poddiskinspector-sample
 spec:
-  image: "allthatjazzleo/pvc-autoscaler-operator:0.0.1-561c879"
+  # disk health check image
+  sidecarImage: "allthatjazzleo/pvc-autoscaler-operator:0.0.1-6ef151b"
   pvcScaling:
     usedSpacePercentage: 80
     increaseQuantity: 20%

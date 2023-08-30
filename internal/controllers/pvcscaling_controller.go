@@ -41,7 +41,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// PVCScalingReconciler reconciles the self healing portion of a CosmosFullNode object
+// PVCScalingReconciler reconciles a PodDiskInspector object status and scales PVCs.
 type PVCScalingReconciler struct {
 	client.Client
 	diskClient    *pvc.DiskUsageCollector

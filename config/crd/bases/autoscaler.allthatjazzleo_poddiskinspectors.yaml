@@ -39,12 +39,6 @@ spec:
           spec:
             description: PodDiskInspectorSpec defines the desired state of PodDiskInspector
             properties:
-              image:
-                description: Image is the docker reference in "repository:tag" format.
-                  E.g. busybox:latest. This is for the sidecar container running the
-                  disk health check process.
-                minLength: 1
-                type: string
               pvcScaling:
                 description: Your cluster must support and use the ExpandInUsePersistentVolumes
                   feature gate. This allows volumes to expand while a pod is attached
@@ -84,8 +78,14 @@ spec:
                 - increaseQuantity
                 - usedSpacePercentage
                 type: object
+              sidecarImage:
+                description: SidecarImage is the docker reference in "repository:tag"
+                  format. E.g. busybox:latest. This is for the sidecar container running
+                  the disk health check process.
+                minLength: 1
+                type: string
             required:
-            - image
+            - sidecarImage
             type: object
           status:
             description: PodDiskInspectorStatus defines the observed state of PodDiskInspector

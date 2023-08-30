@@ -51,7 +51,7 @@ endif
 OPERATOR_SDK_VERSION ?= unknown
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(IMAGE_TAG_BASE):$(VERSION)-$(shell git describe --always)
+IMG ?= $(IMAGE_TAG_BASE):v$(VERSION)
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.26.0
 
@@ -111,7 +111,7 @@ test: manifests generate fmt vet envtest ## Run tests.
 
 .PHONY: test-pod
 test-pod:
-	cd config/samples/test && $(KUSTOMIZE) edit set annotation pvc-autoscaler-operator.kubernetes.io/image:${IMG}
+	cd config/samples/test && $(KUSTOMIZE) edit set annotation pvc-autoscaler-operator.kubernetes.io/sidecar-image:${IMG}
 	$(KUSTOMIZE) build config/samples/test | kubectl apply -f -
 
 ##@ Build
@@ -178,7 +178,7 @@ deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in
 .PHONY: deploy-k3d
 deploy-k3d: docker-build-to-k3d manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
 	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	yq e ".spec.image = \"${IMG}\"" -i config/samples/autoscaler_v1alpha1_poddiskinspector.yaml 
+	yq e ".spec.sidecarImage = \"${IMG}\"" -i config/samples/autoscaler_v1alpha1_poddiskinspector.yaml 
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 	$(KUSTOMIZE) build config/samples | kubectl apply -f -
 

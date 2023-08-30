@@ -159,11 +159,20 @@ func TestCollectDiskUsage(t *testing.T) {
 		reader.ObjectList = corev1.PodList{Items: validPods}
 
 		diskClient := mockDiskUsager(func(ctx context.Context, host string) ([]healthcheck.DiskUsageResponse, error) {
-			if host == "http://10.0.0.1" {
+			var pvc string
+			switch host {
+			case "http://10.0.0.0":
+				pvc = "pvc-poddiskinspector-sample-0"
+			case "http://10.0.0.1":
 				return []healthcheck.DiskUsageResponse{}, errors.New("boom")
+			case "http://10.0.0.2":
+				pvc = "pvc-poddiskinspector-sample-2"
+			default:
+				panic(fmt.Errorf("unknown host: %s", host))
 			}
 			return []healthcheck.DiskUsageResponse{
 				{
+					PvcName:   pvc,
 					AllBytes:  100,
 					FreeBytes: 100,
 				},
@@ -179,7 +188,7 @@ func TestCollectDiskUsage(t *testing.T) {
 		gotNames := lo.Map(got, func(item PVCDiskUsage, _ int) string {
 			return item.Name
 		})
-		require.NotContains(t, gotNames, "pvc-cosmoshub-1")
+		require.NotContains(t, gotNames, "pvc-poddiskinspector-sample-1")
 	})
 
 	t.Run("disk client error", func(t *testing.T) {

@@ -28,10 +28,10 @@ type PodDiskInspectorSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Image is the docker reference in "repository:tag" format. E.g. busybox:latest.
+	// SidecarImage is the docker reference in "repository:tag" format. E.g. busybox:latest.
 	// This is for the sidecar container running the disk health check process.
 	// +kubebuilder:validation:MinLength:=1
-	Image string `json:"image"`
+	SidecarImage string `json:"sidecarImage"`
 
 	// Your cluster must support and use the ExpandInUsePersistentVolumes feature gate. This allows volumes to
 	// expand while a pod is attached to it, thus eliminating the need to restart pods.

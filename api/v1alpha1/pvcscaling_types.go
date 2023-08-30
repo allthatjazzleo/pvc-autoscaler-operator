@@ -8,10 +8,7 @@ import (
 // PVCScalingController is the canonical controller name.
 const PVCScalingController = "PVCScaling"
 
-// PVCScalingSpec is part of a CosmosFullNode but is managed by a separate controller, PVCScalingReconciler.
-// This is an effort to reduce complexity in the CosmosFullNodeReconciler.
-// The controller only modifies the CosmosFullNode's status subresource relying on the CosmosFullNodeReconciler
-// to reconcile appropriately.
+// PVCScalingSpec is part of the PodDiskInspectorSpec.
 type PVCScalingSpec struct {
 	// The percentage of used disk space required to trigger scaling.
 	// Example, if set to 80, autoscaling will not trigger until used space reaches >=80% of capacity.
