@@ -88,7 +88,7 @@ func (r *PVCScalingReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 func (r *PVCScalingReconciler) pvcAutoScale(ctx context.Context, reporter kube.Reporter, crd *v1alpha1.PodDiskInspector) {
 	if crd.Spec.PVCScaling == nil {
-		reporter.Error(errors.New("No default PVCScalingSpec found in PodDiskInspectorSpec"), "Failed to process pvc resize")
+		reporter.Error(errors.New("no default PVCScalingSpec found in PodDiskInspectorSpec"), "Failed to process pvc resize")
 		reporter.RecordError("PVCAutoScaleCollectUsage", errors.New("no default PVCScalingSpec found in PodDiskInspectorSpec"))
 		return
 	}
@@ -104,7 +104,6 @@ func (r *PVCScalingReconciler) pvcAutoScale(ctx context.Context, reporter kube.R
 		reporter.Error(err, "Failed to process pvc resize")
 		reporter.RecordError("PVCAutoScaleResize", err)
 	}
-	return
 }
 
 func (r *PVCScalingReconciler) findObjectForPod(_ context.Context, pod client.Object) []reconcile.Request {

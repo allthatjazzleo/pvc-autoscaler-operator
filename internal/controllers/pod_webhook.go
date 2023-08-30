@@ -46,7 +46,6 @@ type podInterceptor struct {
 
 // Handle adds a label to a generated pod if pod or namespace provide annotaion
 func (d *podInterceptor) Handle(ctx context.Context, req admission.Request) admission.Response {
-
 	// Get the CRD
 	crd := new(v1alpha1.PodDiskInspector)
 	reporter := kube.NewEventReporter(log.FromContext(ctx), d.recorder, nil)
@@ -101,9 +100,7 @@ func (d *podInterceptor) Handle(ctx context.Context, req admission.Request) admi
 		}
 		reporter.RecordInfo("InjectHealthcheckSidecar", fmt.Sprintf("Successfully injected healthcheck sidecar for %v", pod.Name))
 		return admission.PatchResponseFromRaw(req.Object.Raw, marshaledPod)
-
 	}
-
 	return admission.Allowed("no action needed")
 }
 

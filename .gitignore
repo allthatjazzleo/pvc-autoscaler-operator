@@ -27,3 +27,6 @@ Dockerfile.cross
 
 # nix
 .direnv/
+
+# test
+config/samples/test

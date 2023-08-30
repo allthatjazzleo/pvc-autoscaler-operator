@@ -17,6 +17,33 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type mockStatusClient[T client.Object] struct {
+	mu               sync.Mutex
+	LastUpdateObject T
+	UpdateCount      *int
+	UpdateErr        *error
+}
+
+func (ms *mockStatusClient[T]) Create(ctx context.Context, obj client.Object, subResource client.Object, opts ...client.SubResourceCreateOption) error {
+	panic("implement me")
+}
+
+func (ms *mockStatusClient[T]) Update(ctx context.Context, obj client.Object, opts ...client.SubResourceUpdateOption) error {
+	ms.mu.Lock()
+	defer ms.mu.Unlock()
+
+	if ctx == nil {
+		panic("nil context")
+	}
+	*ms.UpdateCount++
+	ms.LastUpdateObject = obj.(T)
+	return *ms.UpdateErr
+}
+
+func (ms *mockStatusClient[T]) Patch(ctx context.Context, obj client.Object, patch client.Patch, opts ...client.SubResourcePatchOption) error {
+	panic("implement me")
+}
+
 type mockClient[T client.Object] struct {
 	mu sync.Mutex
 
@@ -41,6 +68,8 @@ type mockClient[T client.Object] struct {
 	LastUpdateObject T
 	UpdateCount      int
 	UpdateErr        error
+
+	StatusClient mockStatusClient[T]
 }
 
 func (m *mockClient[T]) Get(ctx context.Context, key client.ObjectKey, obj client.Object, _ ...client.GetOption) error {
@@ -155,14 +184,21 @@ func (m *mockClient[T]) Scheme() *runtime.Scheme {
 	return scheme
 }
 
-// ptr returns the pointer for any type.
-// In k8s, many specs require a pointer to a scalar.
-func ptr[T any](v T) *T {
-	return &v
+func (m *mockClient[T]) Status() client.StatusWriter {
+	m.StatusClient.LastUpdateObject = m.LastUpdateObject
+	m.StatusClient.UpdateCount = &m.UpdateCount
+	m.StatusClient.UpdateErr = &m.UpdateErr
+	return &m.StatusClient
 }
 
 func (m *mockClient[T]) RESTMapper() meta.RESTMapper {
 	panic("implement me")
+}
+
+// ptr returns the pointer for any type.
+// In k8s, many specs require a pointer to a scalar.
+func ptr[T any](v T) *T {
+	return &v
 }
 
 func appName(crd *v1alpha1.PodDiskInspector) string {
@@ -265,3 +301,12 @@ func (b mockPodBuilder) WithOrdinalBuild(ordinal int32) (*corev1.Pod, error) {
 	pod.Spec.Containers = append(pod.Spec.Containers, sidecar)
 	return pod, nil
 }
+
+// NopReporter is a no-op kube.Reporter.
+type NopReporter struct{}
+
+func (n NopReporter) Info(msg string, keysAndValues ...interface{})             {}
+func (n NopReporter) Debug(msg string, keysAndValues ...interface{})            {}
+func (n NopReporter) Error(err error, msg string, keysAndValues ...interface{}) {}
+func (n NopReporter) RecordInfo(reason, msg string)                             {}
+func (n NopReporter) RecordError(reason string, err error)                      {}

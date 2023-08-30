@@ -16,12 +16,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+// Client is a controller client. It is a subset of client.Client.
+type Client interface {
+	client.Reader
+	client.Writer
+	client.StatusClient
+}
+
 type PVCAutoScaler struct {
-	client client.Client
+	client Client
 	now    func() time.Time
 }
 
-func NewPVCAutoScaler(client client.Client) *PVCAutoScaler {
+func NewPVCAutoScaler(client Client) *PVCAutoScaler {
 	return &PVCAutoScaler{
 		client: client,
 		now:    time.Now,
@@ -85,7 +92,7 @@ func (scaler PVCAutoScaler) ProcessPVCResize(ctx context.Context, crd *v1alpha1.
 
 			// If cooldown period has not passed, don't patch
 			if pvcCandidate.PVCScalingSpec.Cooldown.Duration != 0 {
-				if scaler.now().Before(scalingStatus.RequestedAt.Add(pvcCandidate.PVCScalingSpec.Cooldown.Duration)) {
+				if !scalingStatus.RequestedAt.IsZero() && scaler.now().Before(scalingStatus.RequestedAt.Add(pvcCandidate.PVCScalingSpec.Cooldown.Duration)) {
 					continue
 				}
 			}
