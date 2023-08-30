@@ -63,7 +63,7 @@ metadata:
     pvc-autoscaler-operator.kubernetes.io/enabled: "true" # required, allow operator to add sidecar
     pvc-autoscaler-operator.kubernetes.io/operator-name: "poddiskinspector-sample" # required, allow operator to add sidecar
     pvc-autoscaler-operator.kubernetes.io/operator-namespace: "default" # required, allow operator to add sidecar
-    pvc-autoscaler-operator.kubernetes.io/sidecar-image: "allthatjazzleo/pvc-autoscaler-operator:0.0.1-aa69336" # optional, allow operator to use a different image from the above crd spec
+    pvc-autoscaler-operator.kubernetes.io/sidecar-image: "allthatjazzleo/pvc-autoscaler-operator:v0.0.1" # optional, allow operator to use a different image from the above crd spec
 spec:
   containers:
   - name: nginx
