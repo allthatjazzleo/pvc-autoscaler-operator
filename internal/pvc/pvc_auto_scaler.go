@@ -87,12 +87,15 @@ func (scaler PVCAutoScaler) ProcessPVCResize(ctx context.Context, crd *v1alpha1.
 		if scalingStatus, found := status[key.String()]; found {
 			// If already patched, don't patch again
 			if scalingStatus.RequestedSize.Value() == newSize.Value() {
+				reporter.Debug("PVC already patched before", "pvc", pvcCandidate.Name, "namespace", pvcCandidate.Namespace, "newSize", newSize.String())
 				continue
 			}
 
 			// If cooldown period has not passed, don't patch
 			if pvcCandidate.PVCScalingSpec.Cooldown.Duration != 0 {
-				if !scalingStatus.RequestedAt.IsZero() && scaler.now().Before(scalingStatus.RequestedAt.Add(pvcCandidate.PVCScalingSpec.Cooldown.Duration)) {
+				cooldown := pvcCandidate.PVCScalingSpec.Cooldown.Duration
+				if !scalingStatus.RequestedAt.IsZero() && scaler.now().Before(scalingStatus.RequestedAt.Add(cooldown)) {
+					reporter.Debug("PVC cooldown period has not passed", "pvc", pvcCandidate.Name, "namespace", pvcCandidate.Namespace, "requestedAt", scalingStatus.RequestedAt.String(), "cooldown", cooldown.String())
 					continue
 				}
 			}
