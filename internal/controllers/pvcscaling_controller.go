@@ -96,7 +96,13 @@ func (r *PVCScalingReconciler) pvcAutoScale(ctx context.Context, reporter kube.R
 	if err != nil {
 		reporter.Error(err, "Failed to collect pvc disk usage")
 		// This error can be noisy so we record a generic error. Check logs for error details.
-		reporter.RecordError("PVCAutoScaleCollectUsage", errors.New("failed to collect pvc disk usage"))
+
+		switch err {
+		case pvc.ErrNoPodsFound:
+			reporter.RecordError("PVCAutoScaleCollectUsage", errors.New("no pods found"))
+		default:
+			reporter.RecordError("PVCAutoScaleCollectUsage", errors.New("failed to collect pvc disk usage"))
+		}
 		return
 	}
 	err = r.pvcAutoScaler.ProcessPVCResize(ctx, crd, usage, reporter)

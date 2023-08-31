@@ -44,7 +44,7 @@ metadata:
   namespace: default
 spec:
   # disk healthcheck image
-  sidecarImage: "allthatjazzleo/pvc-autoscaler-operator:<latest version of operator>" # TODO
+  sidecarImage: "ghcr.io/allthatjazzleo/pvc-autoscaler-operator:<latest version of operator>" # TODO
   pvcScaling:
     usedSpacePercentage: 80 # percentage of used space to trigger scaling
     increaseQuantity: 20% # percentage of increase in size, Either a percentage (e.g. 20%) or a resource storage quantity (e.g. 100Gi).
@@ -63,7 +63,7 @@ metadata:
     pvc-autoscaler-operator.kubernetes.io/enabled: "true" # required, allow operator to add sidecar
     pvc-autoscaler-operator.kubernetes.io/operator-name: "poddiskinspector-sample" # required, allow operator to add sidecar
     pvc-autoscaler-operator.kubernetes.io/operator-namespace: "default" # required, allow operator to add sidecar
-    pvc-autoscaler-operator.kubernetes.io/sidecar-image: "allthatjazzleo/pvc-autoscaler-operator:v0.0.1" # optional, allow operator to use a different image from the above crd spec
+    pvc-autoscaler-operator.kubernetes.io/sidecar-image: "ghcr.io/allthatjazzleo/pvc-autoscaler-operator:v0.0.2" # optional, allow operator to use a different image from the above crd spec
 spec:
   containers:
   - name: nginx

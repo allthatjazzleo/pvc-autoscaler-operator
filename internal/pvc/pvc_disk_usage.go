@@ -24,6 +24,8 @@ const IncreaseQuantity = "pvc-autoscaler-operator.kubernetes.io/increase-quantit
 const Cooldown = "pvc-autoscaler-operator.kubernetes.io/cooldown"
 const MaxSize = "pvc-autoscaler-operator.kubernetes.io/max-size"
 
+var ErrNoPodsFound = errors.New("no pods found")
+
 // DiskUsager fetches disk usage statistics
 type DiskUsager interface {
 	DiskUsage(ctx context.Context, host string) ([]healthcheck.DiskUsageResponse, error)
@@ -63,7 +65,7 @@ func (c DiskUsageCollector) CollectDiskUsage(ctx context.Context, crd *v1alpha1.
 	}
 
 	if len(pods.Items) == 0 {
-		return nil, errors.New("no pods found")
+		return nil, ErrNoPodsFound
 	}
 
 	var (

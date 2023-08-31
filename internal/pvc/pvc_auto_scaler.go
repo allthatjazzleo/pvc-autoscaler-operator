@@ -131,6 +131,9 @@ func (scaler PVCAutoScaler) ProcessPVCResize(ctx context.Context, crd *v1alpha1.
 			merr = errors.Join(merr, err)
 			return merr
 		}
+		if crd.Status.PVCScalingStatus == nil {
+			crd.Status.PVCScalingStatus = make(map[string]v1alpha1.ScalingStatus)
+		}
 		for key, scalingStatus := range pvcCandidates {
 			crd.Status.PVCScalingStatus[key] = scalingStatus
 		}
