@@ -6,6 +6,17 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - admissionregistration.k8s.io
+  resourceNames:
+  - pvc-autoscaler-operator-mutating-webhook-configuration
+  resources:
+  - mutatingwebhookconfigurations
+  verbs:
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - autoscaler.allthatjazzleo
   resources:
   - poddiskinspectors
@@ -61,6 +72,19 @@ rules:
   resources:
   - pods
   verbs:
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resourceNames:
+  - pvc-autoscaler-operator-webhook-server-cert
+  resources:
+  - secrets
+  verbs:
+  - create
   - get
   - list
   - patch

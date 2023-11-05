@@ -36,6 +36,8 @@ func NewPodInterceptorWebhook(c client.Client, decoder *admission.Decoder, recor
 // +kubebuilder:rbac:groups=core,resources=namespaces,verbs=get;list
 // +kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;update;patch
 // +kubebuilder:rbac:groups=core,resources=events,verbs=create;update;patch
+// +kubebuilder:rbac:groups=core,resources=secrets,resourceNames=pvc-autoscaler-operator-webhook-server-cert,verbs=get;list;watch;update;patch;create
+// +kubebuilder:rbac:groups=admissionregistration.k8s.io,resources=mutatingwebhookconfigurations,resourceNames=pvc-autoscaler-operator-mutating-webhook-configuration,verbs=get;list;watch;update
 
 // podInterceptor label pods if Sidecar is specified in pod
 type podInterceptor struct {

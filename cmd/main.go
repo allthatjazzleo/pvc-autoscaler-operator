@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"crypto/x509"
 	"fmt"
 	"os"
 	"time"
@@ -30,21 +31,35 @@ import (
 	_ "net/http/pprof"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/allthatjazzleo/pvc-autoscaler-operator/api/v1alpha1"
 	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/controllers"
+	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/kube"
 	"github.com/allthatjazzleo/pvc-autoscaler-operator/internal/version"
 	"github.com/go-logr/zapr"
+	"github.com/open-policy-agent/cert-controller/pkg/rotator"
 	"github.com/pkg/profile"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	//+kubebuilder:scaffold:imports
+)
+
+const (
+	caName          = "pvc-autoscaler-operator-ca"
+	caOrganization  = "pvc-autoscaler-operator"
+	certName        = "tls.crt"
+	certServiceName = "pvc-autoscaler-operator-webhook-service"
+	keyName         = "tls.key"
+	secretName      = "pvc-autoscaler-operator-webhook-server-cert"
+	mwhName         = "pvc-autoscaler-operator-mutating-webhook-configuration"
 )
 
 var (
@@ -77,6 +92,7 @@ var (
 	profileMode          string
 	logLevel             string
 	logFormat            string
+	certDir              string
 )
 
 func rootCmd() *cobra.Command {
@@ -96,6 +112,7 @@ func rootCmd() *cobra.Command {
 	root.Flags().StringVar(&profileMode, "profile", "", "Enable profiling and save profile to working dir. (Must be one of 'cpu', or 'mem'.)")
 	root.Flags().StringVar(&logLevel, "log-level", "info", "Logging level one of 'error', 'info', 'debug'")
 	root.Flags().StringVar(&logFormat, "log-format", "console", "Logging format one of 'console' or 'json'")
+	root.Flags().StringVar(&certDir, "cert-dir", "/certs", "The directory where certs are stored, defaults to /certs")
 
 	if err := viper.BindPFlags(root.Flags()); err != nil {
 		panic(err)
@@ -132,9 +149,16 @@ func startManager(cmd *cobra.Command, args []string) error {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
-		Port:                   9443,
+		Scheme: scheme,
+		Metrics: server.Options{
+			BindAddress: metricsAddr,
+		},
+		WebhookServer: webhook.NewServer(webhook.Options{
+			CertDir:  certDir,
+			Port:     9443,
+			CertName: certName,
+			KeyName:  keyName,
+		}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "e60c8444.allthatjazzleo",
@@ -155,37 +179,71 @@ func startManager(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Make sure certs are generated and valid if cert rotation is enabled.
+	setupFinished := make(chan struct{})
+	webhooks := []rotator.WebhookInfo{
+		{
+			Name: mwhName,
+			Type: rotator.Mutating,
+		},
+	}
+	keyUsages := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
+	setupLog.Info("setting up cert rotation")
+	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
+		SecretKey: types.NamespacedName{
+			Namespace: kube.GetNamespace(),
+			Name:      secretName,
+		},
+		CertDir:        certDir,
+		CAName:         caName,
+		CAOrganization: caOrganization,
+		DNSName:        fmt.Sprintf("%s.%s.svc", certServiceName, kube.GetNamespace()),
+		IsReady:        setupFinished,
+		ExtKeyUsages:   &keyUsages,
+		Webhooks:       webhooks,
+	}); err != nil {
+		setupLog.Error(err, "unable to set up cert rotation")
+		os.Exit(1)
+	}
+
 	ctx := cmd.Context()
 
-	if err = (&controllers.PodDiskInspectorReconciler{
-		Client:   mgr.GetClient(),
-		Scheme:   mgr.GetScheme(),
-		Recorder: mgr.GetEventRecorderFor("pod-disk-inspector-controller"),
-	}).SetupWithManager(ctx, mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "PodDiskInspector")
-		return err
-	}
+	go func() {
+		<-setupFinished
+		setupLog.Info("cert rotation setup finished")
 
-	// An ancillary controller that supports PodDiskInspector.
-	httpClient := &http.Client{Timeout: 30 * time.Second}
-	if err = controllers.NewPVCScaling(
-		mgr.GetClient(),
-		mgr.GetEventRecorderFor(v1alpha1.PVCScalingController),
-		httpClient,
-	).SetupWithManager(ctx, mgr); err != nil {
-		return fmt.Errorf("unable to create PVCScaling controller: %w", err)
-	}
+		if err = (&controllers.PodDiskInspectorReconciler{
+			Client:   mgr.GetClient(),
+			Scheme:   mgr.GetScheme(),
+			Recorder: mgr.GetEventRecorderFor("pod-disk-inspector-controller"),
+		}).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PodDiskInspector")
+			os.Exit(1)
+		}
 
-	// register webhook
-	srv := mgr.GetWebhookServer()
-	decoder := admission.NewDecoder(mgr.GetScheme())
-	srv.Register("/mutate-v1-pod-sidecar-injector", &webhook.Admission{
-		Handler: controllers.NewPodInterceptorWebhook(
+		// An ancillary controller that supports PodDiskInspector.
+		httpClient := &http.Client{Timeout: 30 * time.Second}
+		if err = controllers.NewPVCScaling(
 			mgr.GetClient(),
-			decoder,
-			mgr.GetEventRecorderFor("pod-sidecar-injector"),
-		),
-	})
+			mgr.GetEventRecorderFor(v1alpha1.PVCScalingController),
+			httpClient,
+		).SetupWithManager(ctx, mgr); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "PVCScalingController")
+			os.Exit(1)
+		}
+
+		// register webhook
+		srv := mgr.GetWebhookServer()
+		decoder := admission.NewDecoder(mgr.GetScheme())
+		srv.Register("/mutate-v1-pod-sidecar-injector", &webhook.Admission{
+			Handler: controllers.NewPodInterceptorWebhook(
+				mgr.GetClient(),
+				decoder,
+				mgr.GetEventRecorderFor("pod-sidecar-injector"),
+			),
+		})
+
+	}()
 
 	//+kubebuilder:scaffold:builder
 

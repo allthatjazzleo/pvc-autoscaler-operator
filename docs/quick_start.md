@@ -6,9 +6,8 @@ This quick start guide creates a pvc autoscaler operator
 ### Prerequisites
 
 1. Managed Kubernetes cluster (EKS, GKE, etc...)
-2. Operator uses admission webhooks to create disk healthcheck sidecar. This requires an installed version of the [cert-manager](https://cert-manager.io/docs/).
-3. CSI driver that supports [`VolumeExpansion`](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#csi-volume-expansion)
-4. A storage class with the `allowVolumeExpansion` field set to `true`
+2. CSI driver that supports [`VolumeExpansion`](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#csi-volume-expansion)
+3. A storage class with the `allowVolumeExpansion` field set to `true`
 
 
 ### Install the CRDs and deploy operator in your cluster
@@ -52,13 +51,14 @@ spec:
     maxSize: 16Ti # max size of pvc to scale
 ```
 
-- Add the required annoations to the pod template spec in your pod, deployment, statefulset, or other crd that allow you to add annotations to the pod template.
+- Add the required annotations to the pod template spec in your pod, deployment, statefulset, or other crd that allow you to add annotations to the pod template.
 
 ```yaml
 apiVersion: v1
 kind: Pod
 metadata:
   name: demo
+  namespace: other-ns # up to you
   annotations:
     pvc-autoscaler-operator.kubernetes.io/enabled: "true" # required, allow operator to add sidecar
     pvc-autoscaler-operator.kubernetes.io/operator-name: "poddiskinspector-sample" # required, allow operator to add sidecar

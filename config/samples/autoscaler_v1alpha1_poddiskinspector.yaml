@@ -10,7 +10,7 @@ metadata:
   name: poddiskinspector-sample
 spec:
   # disk health check image
-  sidecarImage: "allthatjazzleo/pvc-autoscaler-operator:v0.0.2"
+  sidecarImage: "ghcr.io/allthatjazzleo/pvc-autoscaler-operator:v0.0.3"
   pvcScaling:
     usedSpacePercentage: 80
     increaseQuantity: 20%
