@@ -189,7 +189,7 @@ func startManager(cmd *cobra.Command, args []string) error {
 	}
 	keyUsages := []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth, x509.ExtKeyUsageClientAuth}
 	setupLog.Info("setting up cert rotation")
-	if err := rotator.AddRotator(mgr, &rotator.CertRotator{
+	if err = rotator.AddRotator(mgr, &rotator.CertRotator{
 		SecretKey: types.NamespacedName{
 			Namespace: kube.GetNamespace(),
 			Name:      secretName,
@@ -242,7 +242,6 @@ func startManager(cmd *cobra.Command, args []string) error {
 				mgr.GetEventRecorderFor("pod-sidecar-injector"),
 			),
 		})
-
 	}()
 
 	//+kubebuilder:scaffold:builder
